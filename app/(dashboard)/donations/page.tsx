@@ -90,6 +90,7 @@ export default async function Donations({
     db.from("donation_purposes").select("name"),
     db.from("giving_currencies").select("*"),
   ]);
+  const loadFailed = [gifts, summary, trend, partners, campaigns, breakdown, purposes, currencyTotals].some(result => result.error);
   const s = summary.data || {};
   return (
     <div>
@@ -203,7 +204,7 @@ export default async function Donations({
           Apply filters
         </button>
       </form>
-      {gifts.error || summary.error ? (
+      {loadFailed ? (
         <p className="admin-notice-error mt-4">
           Donation data could not be loaded. Check database migrations 015 and 016, and your finance access.
         </p>

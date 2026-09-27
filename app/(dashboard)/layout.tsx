@@ -1,3 +1,4 @@
+import { validTimezone } from '@/lib/timezone';
 import { redirect } from 'next/navigation';
 import { AdminShell } from '@/components/admin-shell';
 import { createClient } from '@/lib/supabase/server';
@@ -19,6 +20,6 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
   if (!admin?.is_active) redirect('/login?error=Administrator%20access%20is%20required');
 
   return (
-    <AdminTimezoneProvider timezone={settings?.timezone || 'Africa/Kampala'}><AdminRealtimeProvider userId={userId} initialNotifications={notifications || []}><AdminShell displayName={profile?.display_name || profile?.email || 'Administrator'} role={admin.role}>{children}</AdminShell></AdminRealtimeProvider></AdminTimezoneProvider>
+    <AdminTimezoneProvider timezone={settings?.timezone && validTimezone(settings.timezone) ? settings.timezone : 'Africa/Kampala'}><AdminRealtimeProvider userId={userId} initialNotifications={notifications || []}><AdminShell displayName={profile?.display_name || profile?.email || 'Administrator'} role={admin.role}>{children}</AdminShell></AdminRealtimeProvider></AdminTimezoneProvider>
   );
 }
