@@ -1,0 +1,7 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { requireRole, writeAudit } from '@/lib/admin-auth';
+
+export async function updateMessage(formData: FormData) { const id = String(formData.get('id')); const status = String(formData.get('status')); if (!['new', 'read', 'replied', 'archived'].includes(status)) return; const { supabase } = await requireRole(['moderator']); const { error } = await supabase.from('contact_messages').update({ status, updated_at: new Date().toISOString(), ...(status === 'replied' ? { replied_at: new Date().toISOString() } : {}) }).eq('id', id); if (!error) await writeAudit('contact.status_changed', 'contact_message', id, { status }); revalidatePath('/messages'); }
+export async function saveMessageDetails(formData: FormData) { const id = String(formData.get('id')); const priority = String(formData.get('priority')); const assignedTo = String(formData.get('assignedTo') || ''); const notes = String(formData.get('notes') || '').trim(); if (!['low', 'normal', 'high', 'urgent'].includes(priority)) return; const { supabase } = await requireRole(['moderator']); const { error } = await supabase.from('contact_messages').update({ priority, assigned_to: assignedTo || null, admin_notes: notes || null, updated_at: new Date().toISOString() }).eq('id', id); if (!error) await writeAudit('contact.details_updated', 'contact_message', id, { priority, assignedTo: assignedTo || null }); revalidatePath('/messages'); }

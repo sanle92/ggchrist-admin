@@ -1,0 +1,2 @@
+import { ArticleForm } from '@/components/article-form';
+export default async function NewArticlePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) { const { error } = await searchParams; return <div><h1 className="text-2xl font-extrabold">Add article</h1><p className="mt-1 text-sm text-admin-muted">Create a new article for the public website.</p><div className="mt-6"><ArticleForm error={error} /></div></div>; }
