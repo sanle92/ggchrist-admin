@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AnalyticsRefresh } from '@/components/analytics-refresh';
 import { Activity, CalendarDays, Eye, Globe2, MousePointerClick, Smartphone, Users } from 'lucide-react';
 import { requireAdmin } from '@/lib/admin-auth';
 import { EmptyState, PageHeader, StatCard } from '@/components/admin-ui';
@@ -23,7 +24,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const days = [7, 30, 90].includes(Number(params.range)) ? Number(params.range) : 30;
   const since = new Date(Date.now() - days * 86400000).toISOString();
   const liveSince = new Date(Date.now() - 2 * 60000).toISOString();
-  const [{ data: events }, { data: daily }, { data: live }, { count: activeMembers }, { count: publishedArticles }] = await Promise.all([
+  const [{ data: events, error: eventsError }, { data: daily, error: dailyError }, { data: live, error: liveError }, { count: activeMembers }, { count: publishedArticles }] = await Promise.all([
     supabase.from('analytics_events').select('visitor_id,session_id,path,referrer,country_name,city,device_type,browser,timezone,occurred_at').eq('event_type', 'page_view').gte('occurred_at', since).order('occurred_at', { ascending: false }).limit(10000),
     supabase.from('analytics_daily').select('analytics_date,page_views,unique_visitors').gte('analytics_date', since.slice(0, 10)).order('analytics_date'),
     supabase.from('active_sessions').select('session_id,current_path,country_name,city,timezone,device_type,browser,started_at,last_seen_at').gte('last_seen_at', liveSince).order('last_seen_at', { ascending: false }).limit(50),
@@ -47,6 +48,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const history = [...historyMap.values()].slice(0, 100);
 
   return <div>
+    <AnalyticsRefresh />
+    {eventsError || dailyError || liveError ? <p role="alert" className="admin-notice-error">Analytics could not be loaded. Check database migrations and access permissions.</p> : null}
     <PageHeader title="Analytics" description="Live audience, traffic sources, locations and engagement across the public website." actions={<div className="flex rounded-lg border border-admin-border bg-white p-1">{[7, 30, 90].map((range) => <Link key={range} href={`/analytics?range=${range}`} className={`rounded-md px-3 py-1.5 text-xs font-bold ${days === range ? 'bg-admin-ink text-white' : 'text-admin-muted hover:bg-admin-bg'}`}>{range} days</Link>)}</div>} />
     <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <StatCard label="Live now" value={(live || []).length} detail="Last 2 minutes" icon={Activity} tone="green" />

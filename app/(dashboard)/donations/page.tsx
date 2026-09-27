@@ -205,8 +205,7 @@ export default async function Donations({
       </form>
       {gifts.error || summary.error ? (
         <p className="admin-notice-error mt-4">
-          Donation data could not be loaded. Check that migration 015 has been
-          applied.
+          Donation data could not be loaded. Check database migrations 015 and 016, and your finance access.
         </p>
       ) : null}
       <div className="mt-5 grid gap-3 sm:grid-cols-3">

@@ -7,10 +7,14 @@ import { secretPresence } from '@/lib/server-secrets';
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string; tab?: string }> }) {
   const params = await searchParams; const tab = params.tab || 'general'; const { supabase, role } = await requireAdmin();
-  const [{ data: site }, { data: impact }, { data: admins }, { data: logs }, secrets] = await Promise.all([
+  const [{ data: site, error: siteError }, { data: impact, error: impactError }, { data: admins, error: adminsError }, { data: logs, error: logsError }, secretResult] = await Promise.all([
     supabase.from('site_settings').select('*').eq('id', true).maybeSingle(), supabase.from('impact_metrics').select('*').eq('id', true).maybeSingle(), supabase.from('admin_users').select('user_id,role,is_active,created_at,profiles(display_name,email)').order('created_at'), supabase.from('audit_logs').select('id,action,target_type,target_id,details,created_at,actor_id').order('created_at', { ascending: false }).limit(100),
-    tab === 'api' && role === 'super_admin' ? secretPresence().catch(() => []) : Promise.resolve([]),
+    tab === 'api' && role === 'super_admin' ? secretPresence().then(data => ({ data, failed: false })).catch(() => ({ data: [], failed: true })) : Promise.resolve({ data: [], failed: false }),
   ]);
+  const secrets = secretResult.data;
+  if (tab === 'api' && secretResult.failed) return <div><PageHeader title="Settings" description="API credentials" /><p role="alert" className="admin-notice-error mt-5">API settings could not be loaded. Check the server service-role configuration and database permissions.</p></div>;
+  const loadError = tab === 'general' ? siteError : tab === 'impact' ? impactError : tab === 'access' ? adminsError : tab === 'audit' ? logsError : null;
+  if (loadError) return <div><PageHeader title="Settings" description="Website settings" /><p role="alert" className="admin-notice-error mt-5">Settings could not be loaded. Check database access and migrations before trying again.</p></div>;
   const social = (site?.social_links || {}) as Record<string, string | null>; const seo = (site?.seo_defaults || {}) as Record<string, string | null>;
   return <div>
     <PageHeader title="Settings" description="Website identity, public features, impact reporting, access and security activity." />
